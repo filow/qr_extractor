@@ -2,15 +2,18 @@
 import point
 import numpy as np
 import cv2
+from datetime import datetime
 from os import path
-
 
 # 解析图片中的二维码
 def image(source):
   if not path.isfile(source):
     raise IOError("目标文件 <%s> 不存在！" % source)
+  before = datetime.now().microsecond
   img = cv2.imread(source,1)
   img,qr,_ = extract(img)
+  after = datetime.now().microsecond
+  print "图案提取已完成，耗时%.2f ms" % ((after-before)/1000.0)
   cv2.imshow('image',img)
   cv2.imshow('qr',qr)
   cv2.waitKey(0)
@@ -87,7 +90,7 @@ def extract(img, qr_size=150):
   return img,qr,qr_done
 
 # 如果N为[0,0]或距离另外两个角落点的距离差太大，则认为无效
-def isValidN(n, p1, p2, limit=0.2):
+def isValidN(n, p1, p2, limit=0.25):
   if n[0] < 0.01 or n[1] < 0.01:
     return False
   n_dist = [ point.distance(p1,n), point.distance(p2,n) ]
@@ -125,7 +128,6 @@ def getIntersectionPoint(points):
       return [0,0]
     x = (k1*x1-y1-k2*x3+y3) / (k1-k2)
     y = k1*(x-x1)+y1
-  # print [x,y]
   return [int(abs(round(x))),int(abs(round(y)))]
 
 def getVertices(contours, c_id, slope, orientation):
