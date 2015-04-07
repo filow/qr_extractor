@@ -5,11 +5,44 @@ import cv2
 from os import path
 
 
+# 解析图片中的二维码
+def image(source):
+  if not path.isfile(source):
+    raise IOError("目标文件 <%s> 不存在！" % source)
+  img = cv2.imread(source,1)
+  img,qr,_ = extract(img)
+  cv2.imshow('image',img)
+  cv2.imshow('qr',qr)
+  cv2.waitKey(0)
+  cv2.destroyAllWindows()
+
+
+# 从摄像头中读取二维码数据
+def camera(width = 640, height = 480):
+  cap = cv2.VideoCapture(0)
+  cap.set(cv2.cv.CV_CAP_PROP_FRAME_WIDTH, width)
+  cap.set(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT, height)
+  cv2.namedWindow('image',cv2.WINDOW_NORMAL)
+  cv2.namedWindow('qr',cv2.WINDOW_NORMAL)
+
+  while(1):
+    k = cv2.waitKey(1) & 0xFF
+    if k==27:
+      break
+    _, frame = cap.read()
+    img,qr,qr_done = extract(frame)
+    cv2.imshow('image',img)
+    if qr_done:
+      cv2.imshow('qr',qr)
+  cv2.destroyAllWindows()
+
+
 def extract(img, qr_size=150):
   # 产生图片的灰度图形
   gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
   # 二维码提取的目标图片区域
   qr = np.zeros([qr_size,qr_size])
+  qr_done = False
   # 将图片边缘化，留下所有边缘线
   edges = cv2.Canny(gray,104,255)
   # 找到图片中所有的边缘线，并保存到contours
@@ -46,13 +79,23 @@ def extract(img, qr_size=150):
     # 源区域和目标区域
     src = np.float32([L[0],M[1],N,O[3]])
     dst = np.float32([[0,0],[qr_size,0],[qr_size,qr_size],[0,qr_size]])
-    if len(src)==4 and len(dst)==4:
+    if isValidN(N,M[1],O[3]) and len(src)==4 and len(dst)==4:
       warp_matrix = cv2.getPerspectiveTransform(src, dst)
       qr = cv2.warpPerspective(gray,warp_matrix,(qr_size,qr_size))
       _,qr = cv2.threshold(qr, 104, 255, 0)
-      cv2.imshow('qr',qr)
-  cv2.imshow('image',img)
+      qr_done = True
+  return img,qr,qr_done
 
+# 如果N为[0,0]或距离另外两个角落点的距离差太大，则认为无效
+def isValidN(n, p1, p2, limit=0.2):
+  if n[0] < 0.01 or n[1] < 0.01:
+    return False
+  n_dist = [ point.distance(p1,n), point.distance(p2,n) ]
+  n_differ = abs( (n_dist[1]-n_dist[0]) / n_dist[0] )
+  if n_differ > limit:
+    return False
+  else:
+    return True
 # 获取四个点形成的两条线的交点
 def getIntersectionPoint(points):
   # 得到4个点的xy坐标
@@ -256,30 +299,3 @@ def select_points(points,contours):
   return result
 
 
-# 解析图片中的二维码
-def image(source):
-  if not path.isfile(source):
-    raise IOError("目标文件 <%s> 不存在！" % source)
-  img = cv2.imread(source,1)
-
-  extract(img)
-  cv2.namedWindow('image',cv2.WINDOW_NORMAL)
-  cv2.namedWindow('qr',cv2.WINDOW_NORMAL)
-  cv2.waitKey(0)
-  cv2.destroyAllWindows()
-
-
-# 从摄像头中读取二维码数据
-def camera(width = 640, height = 480):
-  cap = cv2.VideoCapture(0)
-  cap.set(cv2.cv.CV_CAP_PROP_FRAME_WIDTH, width)
-  cap.set(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT, height)
-  cv2.namedWindow('image',cv2.WINDOW_NORMAL)
-  cv2.namedWindow('qr',cv2.WINDOW_NORMAL)
-  while(1):
-    k = cv2.waitKey(1) & 0xFF
-    if k==27:
-      break
-    _, frame = cap.read()
-    extract(frame)
-  cv2.destroyAllWindows()
