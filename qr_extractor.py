@@ -1,5 +1,5 @@
 #coding: utf-8
-# Copyright [qrcode_extractor] [filow]
+# Copyright [qr_extractor] [filow]
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,12 +20,12 @@ from datetime import datetime
 from os import path
 
 # 解析图片中的二维码
-def image(source):
+def image(source,qr_size = 150):
   if not path.isfile(source):
     raise IOError("目标文件 <%s> 不存在！" % source)
   before = datetime.now().microsecond
   img = cv2.imread(source,1)
-  img,qr,_ = extract(img)
+  img,qr,_ = extract(img,qr_size)
   after = datetime.now().microsecond
   print "图案提取已完成，耗时%.2f ms" % ((after-before)/1000.0)
   cv2.imshow('image',img)
@@ -33,9 +33,16 @@ def image(source):
   cv2.waitKey(0)
   cv2.destroyAllWindows()
 
-
+# 将解析结果直接返回
+def image_raw(source,qr_size=150):
+  if not path.isfile(source):
+    raise IOError("目标文件 <%s> 不存在！" % source)
+  img = cv2.imread(source,1)
+  _,qr,_ = extract(img,qr_size)
+  return qr
+  
 # 从摄像头中读取二维码数据
-def camera(width = 640, height = 480):
+def camera(width = 640, height = 480,qr_size = 150):
   cap = cv2.VideoCapture(0)
   cap.set(cv2.cv.CV_CAP_PROP_FRAME_WIDTH, width)
   cap.set(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT, height)
@@ -47,7 +54,7 @@ def camera(width = 640, height = 480):
     if k==27:
       break
     _, frame = cap.read()
-    img,qr,qr_done = extract(frame)
+    img,qr,qr_done = extract(frame,qr_size)
     cv2.imshow('image',img)
     if qr_done:
       cv2.imshow('qr',qr)

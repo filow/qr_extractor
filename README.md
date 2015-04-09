@@ -12,3 +12,24 @@
 本提取器在Mac OS X Yosemite下测试可正常运行。在运行前，请安装OpenCV, python以及numpy和OpenCV对python的接口。如果您要使用视频扫码功能，需要保证您的电脑有可用的摄像头。
 
 ## 软件接口
+    image(source, qr_size = 150)
+
+source: 要处理的图片源地址
+qr_size: 提取出的qr图片大小
+
+该函数会直接将处理的原图片加上识别框后显示，也会显示提取出的qr码。此函数仅作为演示用途。
+
+    camera(width=640,height=480,qr_size=150)
+    
+width,height: 影像的宽高，可按照实际情况调整。width*height的积越小处理速度越快。
+qr_size: 提取出的qr图片大小
+
+	image_raw(source,qr_size=150)
+
+功能与image函数类似，但在处理后直接返回提取的qr码。（qr_size*qr_size的二维数组，二值图像）
+
+## 代码示例
+	import qr_extractor as qr
+	qr.image('test/test.png')
+	print qr.image_raw('test/test.png')
+	# qr.camera()  # 开启摄像头识别
